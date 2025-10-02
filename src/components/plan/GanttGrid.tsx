@@ -22,9 +22,9 @@ interface GanttGridProps {
   widthPx?: number;
 }
 
-/** màu nền theo cấp WBS */
+/** màu nền theo cấp WBS - Primavera style */
 const getWbsBandClass = (wbs?: string) => {
-  if (!wbs) return 'bg-blue-50';
+  if (!wbs) return 'bg-gray-50';
   const level = Math.max(0, wbs.split('.').length - 1);
   if (level === 0) return 'bg-blue-50';
   if (level === 1) return 'bg-green-50';
@@ -71,9 +71,9 @@ const GridRow: React.FC<GridRowProps> = ({
       <ContextMenuTrigger>
         <div
           ref={setNodeRef}
-          style={{ ...style, height: '41px' }}
+          style={{ ...style, height: '28px' }}
           className={cn(
-            "flex border-b border-border text-xs hover:bg-muted/50 cursor-pointer relative",
+            "flex border-b border-gray-200 text-xs hover:bg-blue-50 cursor-pointer relative",
             bandClass,
             selectedTask?.id === task.id && "bg-blue-100 dark:bg-blue-900/50",
             isDragging && "opacity-50 z-50"
@@ -82,54 +82,69 @@ const GridRow: React.FC<GridRowProps> = ({
         >
           {/* WBS: chỉ số, KHÔNG icon; vẫn nhận drag */}
           <div
-            className="w-12 flex-shrink-0 border-r p-1 text-center flex items-center justify-center cursor-grab active:cursor-grabbing"
+            className="w-12 flex-shrink-0 border-r border-gray-200 p-0.5 text-center flex items-center justify-center cursor-grab active:cursor-grabbing bg-gray-50"
             {...(listeners as any)}
             {...(attributes as any)}
             onClick={(e) => e.stopPropagation()}
             title="Drag from here"
           >
-            <span className="truncate">{wbs}</span>
+            <span className="truncate font-mono text-xs">{wbs}</span>
           </div>
 
-          <div className="w-20 flex-shrink-0 border-r p-1 truncate">{task.projectCase}</div>
+          <div className="w-20 flex-shrink-0 border-r border-gray-200 p-0.5 truncate bg-gray-50">
+            <span className="font-mono text-xs text-blue-700">{task.projectCase}</span>
+          </div>
 
           {/* Task name + toggle chevron */}
           <div
-            className="w-32 flex-shrink-0 border-r p-1 flex items-center"
-            style={{ paddingLeft: `${level * 1.5 + 0.5}rem` }}
+            className="w-48 flex-shrink-0 border-r border-gray-200 p-0.5 flex items-center"
+            style={{ paddingLeft: `${level * 16 + 2}px` }}
           >
             {hasSubtasks && (
               <button
                 onClick={(e) => { e.stopPropagation(); setIsExpanded(!isExpanded); }}
-                className="mr-1 p-0.5 rounded-sm hover:bg-muted"
+                className="mr-1 p-0 rounded-sm hover:bg-gray-200"
                 title={isExpanded ? "Collapse" : "Expand"}
               >
-                {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                {isExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
               </button>
             )}
-            <span className="truncate">{task.name}</span>
+            <span className="truncate font-medium text-xs">{task.name}</span>
           </div>
 
-          <div className="w-28 flex-shrink-0 border-r p-1 truncate">{task.description}</div>
-          <div className="w-24 flex-shrink-0 border-r p-1 truncate">{task.assignees?.join(', ')}</div>
+          <div className="w-32 flex-shrink-0 border-r border-gray-200 p-0.5 truncate text-gray-600 text-xs">
+            {task.description}
+          </div>
+          
+          <div className="w-24 flex-shrink-0 border-r border-gray-200 p-0.5 truncate">
+            <span className="text-xs text-gray-700">{task.assignees?.join(', ')}</span>
+          </div>
 
-          <div className="w-20 flex-shrink-0 border-r p-1">
+          <div className="w-16 flex-shrink-0 border-r border-gray-200 p-0.5 text-center">
             <StatusBadge type={`priority-${task.priority}`}>{task.priority}</StatusBadge>
           </div>
-          <div className="w-24 flex-shrink-0 border-r p-1">
+          
+          <div className="w-20 flex-shrink-0 border-r border-gray-200 p-0.5 text-center">
             <StatusBadge type={`status-${task.status}`}>{task.status}</StatusBadge>
           </div>
 
-          <div className="w-20 flex-shrink-0 border-r p-1 text-center">
+          <div className="w-16 flex-shrink-0 border-r border-gray-200 p-0.5 text-center text-xs">
             {task.startDate ? format(parseISO(task.startDate), 'dd-MMM-yy') : ''}
           </div>
-          <div className="w-20 flex-shrink-0 border-r p-1 text-center">
+          
+          <div className="w-16 flex-shrink-0 border-r border-gray-200 p-0.5 text-center text-xs">
             {task.endDate ? format(parseISO(task.endDate), 'dd-MMM-yy') : ''}
           </div>
 
-          <div className="w-16 flex-shrink-0 border-r p-1 text-right">{task.estHours}</div>
-          <div className="w-16 flex-shrink-0 border-r p-1 text-right">{task.usedHours}</div>
-          <div className="w-16 flex-shrink-0 p-1 text-right font-medium">
+          <div className="w-12 flex-shrink-0 border-r border-gray-200 p-0.5 text-right font-mono text-xs">
+            {task.estHours || 0}
+          </div>
+          
+          <div className="w-12 flex-shrink-0 border-r border-gray-200 p-0.5 text-right font-mono text-xs">
+            {task.usedHours || 0}
+          </div>
+          
+          <div className="w-10 flex-shrink-0 border-r border-gray-200 p-0.5 text-right font-mono text-xs font-medium">
             {(task.estHours ?? 0) - (task.usedHours ?? 0)}
           </div>
         </div>
@@ -172,38 +187,20 @@ export const GanttGrid: React.FC<GanttGridProps> = ({
   gridRef,
   widthPx,
 }) => {
-  const SPACER_BEFORE_HEADER_PX = 40 + 32;
-
   return (
     <div
       ref={gridRef}
-      className="flex-shrink-0 border-r bg-card overflow-x-hidden"
+      className="flex-shrink-0 border-r border-gray-400 bg-white overflow-hidden"
       style={{ width: widthPx ? `${widthPx}px` : undefined }}
     >
-      <div style={{ height: SPACER_BEFORE_HEADER_PX }} />
-
-      <div className="flex bg-muted font-semibold text-xs h-8 select-none">
-        <div className="w-12 flex-shrink-0 border-b border-r px-2 h-full flex items-center justify-center">WBS</div>
-        <div className="w-20 flex-shrink-0 border-b border-r px-2 h-full flex items-center">Project Case</div>
-        <div className="w-32 flex-shrink-0 border-b border-r px-2 h-full flex items-center">Task Name</div>
-        <div className="w-28 flex-shrink-0 border-b border-r px-2 h-full flex items-center">Description</div>
-        <div className="w-24 flex-shrink-0 border-b border-r px-2 h-full flex items-center">Assigned To</div>
-        <div className="w-20 flex-shrink-0 border-b border-r px-2 h-full flex items-center">Priority</div>
-        <div className="w-24 flex-shrink-0 border-b border-r px-2 h-full flex items-center">Status</div>
-        <div className="w-20 flex-shrink-0 border-b border-r px-2 h-full flex items-center justify-center">Start</div>
-        <div className="w-20 flex-shrink-0 border-b border-r px-2 h-full flex items-center justify-center">End</div>
-        <div className="w-16 flex-shrink-0 border-b border-r px-2 h-full flex items-center justify-center">Est. Hours</div>
-        <div className="w-16 flex-shrink-0 border-b border-r px-2 h-full flex items-center justify-center">Used Hours</div>
-        <div className="w-16 flex-shrink-0 border-b px-2 h-full flex items-center justify-center">Remaining Hours</div>
-      </div>
-
-      <div>
+      {/* Grid Content Only - No Header */}
+      <div className="overflow-y-auto" style={{ height: 'calc(100vh - 240px)' }}>
         {tasks.map((task, idx) => (
           <GridRow
             key={task.id}
             task={task}
             level={0}
-            wbs={`${idx + 1}`} // hoặc task.wbs ?? String(idx+1)
+            wbs={`${idx + 1}`}
             selectedTask={selectedTask}
             onSelectTask={onSelectTask}
             onAddTask={onAddTask}

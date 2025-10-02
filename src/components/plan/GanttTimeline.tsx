@@ -25,8 +25,8 @@ import {
 } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
 
-const DAY_WIDTH = 32;
-const ROW_HEIGHT = 41;
+const DAY_WIDTH = 24;
+const ROW_HEIGHT = 28;
 
 interface GanttTimelineProps {
   tasks: PlanTask[];
@@ -34,7 +34,6 @@ interface GanttTimelineProps {
   endDate: Date;
   onTaskUpdate: (taskId: string, newStartDate: Date, newEndDate: Date) => void;
   timelineRef: React.RefObject<HTMLDivElement>;
-  headerRef: React.RefObject<HTMLDivElement>;
 }
 
 /* ----------------- helpers ----------------- */
@@ -80,34 +79,54 @@ function TaskBar({
 
   const left = differenceInCalendarDays(taskStart, gridStart) * DAY_WIDTH;
   const width =
-    (differenceInCalendarDays(taskEnd, taskStart) + 1) * DAY_WIDTH - 4;
+    (differenceInCalendarDays(taskEnd, taskStart) + 1) * DAY_WIDTH - 2;
+
+  // Primavera-style colors based on status
+  const getTaskBarColor = (status: string) => {
+    switch (status) {
+      case 'Done':
+        return 'bg-green-500 border-green-600';
+      case 'In Progress':
+        return 'bg-blue-500 border-blue-600';
+      case 'Backlog':
+      default:
+        return 'bg-gray-400 border-gray-500';
+    }
+  };
+
+  const barColor = getTaskBarColor(task.status);
 
   return (
     <div
       ref={setNodeRef}
       style={{ ...style, left, width, top, position: 'absolute' }}
-      className="h-6 bg-blue-500 border border-blue-600 rounded-md flex items-center px-2 text-white text-xs z-10 group shadow-sm"
-      title={`${task.name} (${task.usedHours}/${task.estHours}h)`}
+      className={cn(
+        "h-4 border rounded flex items-center px-1 text-white text-xs z-10 group shadow-sm",
+        barColor
+      )}
+      title={`${task.name} (${task.usedHours || 0}/${task.estHours || 0}h)`}
     >
       <div
         ref={setLeftHandleRef}
         {...leftListeners}
-        className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize"
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize"
       />
       <div
         {...listeners}
         {...attributes}
-        className="w-full h-full cursor-grab active:cursor-grabbing flex items-center justify-between gap-2"
+        className="w-full h-full cursor-grab active:cursor-grabbing flex items-center justify-between"
       >
-        <span className="truncate flex-shrink">{task.name}</span>
-        <span className="flex-shrink-0 font-mono text-white/80">
-          ({task.usedHours}/{task.estHours}h)
-        </span>
+        <span className="truncate flex-shrink text-xs">{task.name}</span>
+        {width > 60 && (
+          <span className="flex-shrink-0 font-mono text-xs text-white/80 ml-1">
+            {task.usedHours || 0}h
+          </span>
+        )}
       </div>
       <div
         ref={setRightHandleRef}
         {...rightListeners}
-        className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize"
+        className="absolute right-0 top-0 bottom-0 w-1 cursor-ew-resize"
       />
     </div>
   );
@@ -120,7 +139,6 @@ export function GanttTimeline({
   endDate,
   onTaskUpdate,
   timelineRef,
-  headerRef,
 }: GanttTimelineProps) {
   // cố định về 00:00 local rồi mở rộng trọn tuần (Mon-Sun)
   const extendedStartDate = startOfWeek(startOfDay(startDate), {
@@ -130,7 +148,7 @@ export function GanttTimeline({
     weekStartsOn: 1,
   });
 
-  const { days /*, months*/ } = generateDateHeaders(
+  const { days } = generateDateHeaders(
     extendedStartDate,
     extendedEndDate
   );
@@ -145,7 +163,7 @@ export function GanttTimeline({
 
   if (!tasks || tasks.length === 0) {
     return (
-      <div className="flex-1 bg-muted/20 flex items-center justify-center text-muted-foreground border-l">
+      <div className="flex-1 bg-gray-50 flex items-center justify-center text-gray-500 border-l border-gray-300">
         <div className="text-center">
           <p>No tasks to display</p>
           <p className="text-sm mt-2">Tasks: {tasks?.length || 0}</p>
@@ -188,113 +206,43 @@ export function GanttTimeline({
   const timelineWidthPx = `${days.length * DAY_WIDTH}px`;
 
   return (
-    <div ref={timelineRef} className="flex-grow overflow-x-auto bg-background">
-      <div ref={headerRef} className="sticky top-0 z-20 bg-muted">
-        {/* wrapper giữ nguyên width & ngăn shrink */}
-        <div style={{ width: timelineWidthPx, flex: '0 0 auto' }}>
-          {/* Weeks row */}
-          <div className="flex">
-            {(() => {
-              const weeks: {
-                key: number;
-                count: number;
-                start: Date;
-                weekNo: number;
-              }[] = [];
-              days.forEach((day) => {
-                const start = startOfWeek(day, { weekStartsOn: 1 });
-                const key = start.getTime();
-                const last = weeks[weeks.length - 1];
-                if (!last || last.key !== key) {
-                  weeks.push({
-                    key,
-                    count: 1,
-                    start,
-                    weekNo: getISOWeek(day),
-                  });
-                } else {
-                  last.count += 1;
-                }
-              });
-
-              return weeks.map((w) => (
-                <div
-                  key={w.key}
-                  className="flex-none border-b border-r text-center text-xs leading-tight h-10 flex flex-col items-center justify-center whitespace-nowrap overflow-hidden"
-                  style={{ width: w.count * DAY_WIDTH, flex: '0 0 auto' }}
-                >
-                  <div className="font-medium text-ellipsis overflow-hidden">
-                    Week {w.weekNo}
-                  </div>
-                  <div className="text-[10px] opacity-70 text-ellipsis overflow-hidden">
-                    {format(w.start, 'd MMM yyyy')}
-                  </div>
-                </div>
-              ));
-            })()}
-          </div>
-
-          {/* Days row */}
-          <div className="flex">
-            {days.map((day) => (
-              <div
-                key={day.toString()}
-                className={cn(
-                  'flex-none border-b border-r text-center text-xs h-8 flex items-center justify-center',
-                  isWeekend(day) && 'bg-muted-foreground/10'
-                )}
-                style={{ width: DAY_WIDTH, flex: '0 0 auto' }}
-              >
-                <div
-                  className={cn(
-                    '',
-                    isToday(day) &&
-                      'bg-blue-500 text-white rounded-full w-6 h-6 mx-auto flex items-center justify-center'
-                  )}
-                >
-                  {format(day, 'd')}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Weekday letters row */}
-          <div className="flex">
-            {days.map((day) => (
-              <div
-                key={`dow-${day.toString()}`}
-                className={cn(
-                  'flex-none border-b border-r text-center text-xs h-8 flex items-center justify-center',
-                  isWeekend(day) && 'bg-muted-foreground/10'
-                )}
-                style={{ width: DAY_WIDTH, flex: '0 0 auto' }}
-              >
-                <div className="uppercase">{format(day, 'EEEEE')}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
+    <div ref={timelineRef} className="flex-grow overflow-x-auto bg-white">
       <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
         <div
           ref={setNodeRef}
-          className="relative bg-background"
+          className="relative bg-white"
           style={{
             height: `${Math.max(flatTasks.length * ROW_HEIGHT, 200)}px`,
-            width: timelineWidthPx, // body khớp tuyệt đối với header
+            width: timelineWidthPx,
             minWidth: '400px',
             backgroundImage:
-              'linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px)',
+              'linear-gradient(to right, #e5e7eb 1px, transparent 1px), linear-gradient(to bottom, #e5e7eb 1px, transparent 1px)',
             backgroundSize: `${DAY_WIDTH}px ${ROW_HEIGHT}px`,
           }}
         >
+          {/* Today line */}
+          {(() => {
+            const today = new Date();
+            const todayIndex = differenceInCalendarDays(startOfDay(today), extendedStartDate);
+            if (todayIndex >= 0 && todayIndex < days.length) {
+              const todayLeft = todayIndex * DAY_WIDTH + DAY_WIDTH / 2;
+              return (
+                <div
+                  className="absolute top-0 bottom-0 w-0.5 bg-red-500 z-20"
+                  style={{ left: `${todayLeft}px` }}
+                  title="Today"
+                />
+              );
+            }
+            return null;
+          })()}
+
           {flatTasks.map((task, index) => (
             <TaskBar
               key={task.id}
               task={task}
               gridStart={extendedStartDate}
-              top={index * ROW_HEIGHT + 8}
+              top={index * ROW_HEIGHT + 6}
             />
           ))}
         </div>

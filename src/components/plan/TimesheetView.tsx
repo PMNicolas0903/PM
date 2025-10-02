@@ -7,9 +7,11 @@ import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuTrigger } 
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { Send, Redo } from 'lucide-react';
+
 interface TimesheetViewProps {
   tasks: PlanTask[];
 }
+
 const flattenTasks = (tasks: PlanTask[]): PlanTask[] => {
   const allTasks: PlanTask[] = [];
   const recurse = (task: PlanTask) => {
@@ -21,6 +23,7 @@ const flattenTasks = (tasks: PlanTask[]): PlanTask[] => {
   tasks.forEach(recurse);
   return allTasks;
 };
+
 const updateTimesheet = async ({ taskId, state }: { taskId: string; state: 'submitted' | 'resubmitted' }) => {
   const endpoint = state === 'submitted' ? '/api/timesheet/submit' : '/api/timesheet/resubmit';
   const res = await fetch(endpoint, {
@@ -31,6 +34,7 @@ const updateTimesheet = async ({ taskId, state }: { taskId: string; state: 'subm
   if (!res.ok) throw new Error(`Failed to ${state} timesheet`);
   return res.json();
 };
+
 const getStatusBadgeClass = (status: TimesheetState) => {
   switch (status) {
     case 'submitted': return 'bg-green-100 text-green-800';
@@ -39,9 +43,11 @@ const getStatusBadgeClass = (status: TimesheetState) => {
     default: return 'bg-gray-100 text-gray-800';
   }
 };
+
 export function TimesheetView({ tasks }: TimesheetViewProps) {
   const queryClient = useQueryClient();
   const flatTasks = flattenTasks(tasks);
+  
   const mutation = useMutation({
     mutationFn: updateTimesheet,
     onSuccess: (data, variables) => {
@@ -52,9 +58,11 @@ export function TimesheetView({ tasks }: TimesheetViewProps) {
       toast.error(`Failed to ${variables.state} timesheet: ${error.message}`);
     },
   });
+
   const handleAction = (taskId: string, state: 'submitted' | 'resubmitted') => {
     mutation.mutate({ taskId, state });
   };
+
   return (
     <Card>
       <CardHeader>
@@ -62,7 +70,7 @@ export function TimesheetView({ tasks }: TimesheetViewProps) {
       </CardHeader>
       <CardContent>
         <div className="border rounded-lg">
-          <div className="flex bg-muted font-semibold text-sm border-b">
+          <div className="flex bg-gray-100 font-semibold text-sm border-b">
             <div className="w-16 p-2 text-center">WBS</div>
             <div className="flex-1 p-2">Task Name</div>
             <div className="w-32 p-2 text-center">USED Hours</div>
@@ -72,7 +80,7 @@ export function TimesheetView({ tasks }: TimesheetViewProps) {
             {flatTasks.map(task => (
               <ContextMenu key={task.id}>
                 <ContextMenuTrigger>
-                  <div className="flex border-b text-sm items-center hover:bg-muted/50">
+                  <div className="flex border-b text-sm items-center hover:bg-gray-50">
                     <div className="w-16 p-2 text-center text-muted-foreground">{task.wbs}</div>
                     <div className="flex-1 p-2">{task.name}</div>
                     <div className="w-32 p-2 text-center font-medium">{task.usedHours}</div>
